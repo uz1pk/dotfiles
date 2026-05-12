@@ -42,6 +42,11 @@ if [[ ! -d "$HOME/.claude/.git" ]]; then
         claude_repo="${CLAUDE_REPO:-}"
     fi
     if [[ -n "$claude_repo" ]]; then
+        if [[ -d "$HOME/.claude" && -n "$(ls -A "$HOME/.claude" 2>/dev/null)" ]]; then
+            backup="$HOME/.claude.backup-$(date +%Y%m%d-%H%M%S)"
+            mv "$HOME/.claude" "$backup"
+            echo "  Moved existing untracked ~/.claude to $backup"
+        fi
         if git clone "$claude_repo" "$HOME/.claude"; then
             echo "  Cloned Claude config to ~/.claude"
         else

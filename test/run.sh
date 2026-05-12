@@ -61,5 +61,15 @@ out=$(CLAUDE_REPO="/tmp/does-not-exist-xyz" ./install.sh 2>&1)
 grep -q "WARNING: clone failed" <<<"$out"
 echo "  OK  install.sh warns on clone failure and exits cleanly"
 
+# Untracked ~/.claude (exists with content, no .git) -> auto-backup + clone
+rm -rf "$HOME/.claude" "$HOME"/.claude.backup-*
+mkdir "$HOME/.claude"
+echo "preexisting content" > "$HOME/.claude/notes.md"
+CLAUDE_REPO="$fake_repo" ./install.sh >/dev/null
+[[ -d "$HOME/.claude/.git" ]]
+backup=$(ls -d "$HOME"/.claude.backup-* 2>/dev/null | head -1)
+[[ -n "$backup" && -f "$backup/notes.md" ]]
+echo "  OK  untracked ~/.claude is backed up before clone"
+
 echo "==> ALL CHECKS PASSED"
 '
