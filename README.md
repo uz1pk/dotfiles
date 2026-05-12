@@ -10,6 +10,7 @@ Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/). T
 ├── zsh/          Stow package: .zshrc, .zshenv, .zprofile -> $HOME
 ├── test/         Docker-based test harness for install.sh
 ├── .gitignore    Excludes *.local files and OS junk
+├── AGENTS.md     Rules for LLM-based CLI agents (Claude Code, Cursor, etc.)
 └── README.md
 ```
 
