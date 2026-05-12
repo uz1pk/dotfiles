@@ -34,4 +34,28 @@ for local_file in .zshrc.local .zshenv.local .zprofile.local; do
     fi
 done
 
+if [[ ! -d "$HOME/.claude/.git" ]]; then
+    echo
+    if [[ -t 0 ]]; then
+        read -rp "Enter Claude config repo URL (empty to skip): " claude_repo
+    else
+        claude_repo="${CLAUDE_REPO:-}"
+    fi
+    if [[ -n "$claude_repo" ]]; then
+        if git clone "$claude_repo" "$HOME/.claude"; then
+            echo "  Cloned Claude config to ~/.claude"
+        else
+            echo "  WARNING: clone failed. ~/.claude was not set up."
+        fi
+    else
+        echo "  Skipped Claude config clone."
+    fi
+fi
+
+if ! command -v claude &>/dev/null; then
+    echo
+    echo "WARNING: 'claude' CLI not found in PATH."
+    echo "  Install Claude Code: https://docs.anthropic.com/en/docs/claude-code/setup"
+fi
+
 echo "Done. Open a new shell."
