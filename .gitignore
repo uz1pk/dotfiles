@@ -1,0 +1,16 @@
+# Machine-local overrides — never commit
+*.local
+.zshrc.local
+.zshenv.local
+.zprofile.local
+.gitconfig.local
+
+# OS junk
+.DS_Store
+
+# Secret-shaped files (defence in depth)
+*.pem
+*.key
+id_rsa*
+.env
+.env.*
