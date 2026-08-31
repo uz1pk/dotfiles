@@ -100,3 +100,16 @@ export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 # ----------------------------
 
 [ -f "$HOME/.zshrc.local" ] && source "$HOME/.zshrc.local"
+
+trace() {
+  if [[ $# -lt 1 ]]; then
+    echo "Usage: trace <group:artifact> [configuration]" >&2
+    echo "  default configuration: runtimeClasspath" >&2
+    return 1
+  fi
+  ./gradlew dependencyInsight --dependency "$1" --configuration "${2:-runtimeClasspath}"
+}
+
+export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
