@@ -49,7 +49,7 @@ alias python='python3'
 alias broom="git add . && git commit -m ':broom:' && git push"
 alias glist="git branch -l"
 gdl() { git branch -D "$1"; }
-alias captures='open "$TMPDIR/TemporaryItems/"'
+alias broom="git add . && git commit -m ':broom:' && git push"
 
 # ----------------------------
 # Java exports (if I need to change versions)
