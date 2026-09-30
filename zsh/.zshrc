@@ -94,6 +94,7 @@ export DISABLE_TELEMETRY=1
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 export NODE_OPTIONS="--max-old-space-size=8192"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
+alias claude='claude --effort max'
 
 # ----------------------------
 # Machine-specific overrides (not tracked)
