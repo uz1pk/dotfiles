@@ -41,6 +41,21 @@ for f in .zshrc.local .zshenv.local .zprofile.local; do
     echo "  OK  ~/$f preserved on rerun"
 done
 
+for f in .zshrc .zprofile; do rm "$HOME/$f"; echo "preexisting $f" > "$HOME/$f"; done
+out=$(./install.sh 2>&1)
+for f in .zshrc .zprofile; do
+    [[ -L "$HOME/$f" && "$(readlink "$HOME/$f")" == *dotfiles/zsh/$f ]]
+    backup=$(ls -d "$HOME/$f".backup-* | head -1)
+    [[ "$(cat "$backup")" == "preexisting $f" ]]
+    grep -q "Moved existing ~/$f to" <<<"$out"
+    echo "  OK  preexisting ~/$f backed up and replaced by symlink"
+done
+out=$(./install.sh 2>&1)
+if grep -q "Moved existing" <<<"$out"; then
+    echo "  FAIL  rerun moved files although links were in place"; exit 1
+fi
+echo "  OK  rerun with links in place moves nothing"
+
 # CLAUDE_REPO env var triggers clone (using a local bare repo as the source)
 fake_repo=$(mktemp -d)
 git -C "$fake_repo" init --bare --quiet
@@ -61,15 +76,38 @@ out=$(CLAUDE_REPO="/tmp/does-not-exist-xyz" ./install.sh 2>&1)
 grep -q "WARNING: clone failed" <<<"$out"
 echo "  OK  install.sh warns on clone failure and exits cleanly"
 
-# Untracked ~/.claude (exists with content, no .git) -> auto-backup + clone
-rm -rf "$HOME/.claude" "$HOME"/.claude.backup-*
+seed=$(mktemp -d)
+git -C "$seed" init --quiet
+echo "repo version" > "$seed/settings.machine.json"
+echo "repo readme" > "$seed/README.md"
+git -C "$seed" add -A
+git -C "$seed" -c user.name=test -c user.email=test@example.com commit --quiet -m seed
+seeded_repo=$(mktemp -d)
+git clone --quiet --bare "$seed" "$seeded_repo"
+
+rm -rf "$HOME/.claude"
 mkdir "$HOME/.claude"
 echo "preexisting content" > "$HOME/.claude/notes.md"
-CLAUDE_REPO="$fake_repo" ./install.sh >/dev/null
+echo "local version" > "$HOME/.claude/settings.machine.json"
+out=$(CLAUDE_REPO="$seeded_repo" ./install.sh 2>&1)
+grep -q "Attached Claude config to existing ~/.claude" <<<"$out"
 [[ -d "$HOME/.claude/.git" ]]
-backup=$(ls -d "$HOME"/.claude.backup-* 2>/dev/null | head -1)
-[[ -n "$backup" && -f "$backup/notes.md" ]]
-echo "  OK  untracked ~/.claude is backed up before clone"
+[[ "$(cat "$HOME/.claude/notes.md")" == "preexisting content" ]]
+[[ "$(cat "$HOME/.claude/settings.machine.json")" == "repo version" ]]
+[[ "$(cat "$HOME/.claude/README.md")" == "repo readme" ]]
+git -C "$HOME/.claude" rev-parse --abbrev-ref @{u} >/dev/null
+if ls -d "$HOME"/.claude.backup-* >/dev/null 2>&1; then
+    echo "  FAIL  existing ~/.claude was moved aside"; exit 1
+fi
+echo "  OK  existing ~/.claude attached in place (repo versions win, untracked files kept)"
+
+rm -rf "$HOME/.claude"
+mkdir "$HOME/.claude"
+echo "preexisting content" > "$HOME/.claude/notes.md"
+out=$(CLAUDE_REPO="/tmp/does-not-exist-xyz" ./install.sh 2>&1)
+grep -q "WARNING: could not attach Claude config" <<<"$out"
+[[ ! -e "$HOME/.claude/.git" && "$(cat "$HOME/.claude/notes.md")" == "preexisting content" ]]
+echo "  OK  failed attach leaves ~/.claude as it was"
 
 echo "==> ALL CHECKS PASSED"
 '

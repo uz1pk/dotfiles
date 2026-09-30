@@ -24,12 +24,12 @@ cd ~/dotfiles && ./install.sh
 `install.sh` will:
 
 1. Install GNU Stow if missing (Homebrew on macOS, apt on Debian/Ubuntu)
-2. Symlink every package into `$HOME` (currently `zsh/` only)
+2. Symlink every package into `$HOME` (currently `zsh/` only). A real file already sitting at a link path (installers such as Homebrew, Docker Desktop, JetBrains Toolbox and oh-my-zsh create `~/.zprofile` and `~/.zshrc`) is first moved to `<file>.backup-YYYYMMDD-HHMMSS`
 3. Create empty `~/.zshrc.local`, `~/.zshenv.local`, `~/.zprofile.local` (mode 600) if missing
-4. Prompt for a Claude Code config repo URL — or read `$CLAUDE_REPO` env var — and clone into `~/.claude`
+4. Prompt for a Claude Code config repo URL — or read `$CLAUDE_REPO` env var — and clone into `~/.claude`. If `~/.claude` already has content (Claude Code was installed first), the repo is attached in place instead: tracked files take the repo's version and everything else stays where it is
 5. Warn if the `claude` CLI isn't in PATH
 
-Re-runs are idempotent: existing `.local` files are never overwritten, and `~/.claude` is left alone if already cloned.
+Re-runs are idempotent: existing `.local` files are never overwritten, links already in place are left alone, and `~/.claude` is left alone once it is a git repo.
 
 After bootstrap, populate the three `~/.X.local` files with your machine-local config (typically pasted from a password manager).
 
@@ -76,8 +76,10 @@ Spins up a clean Ubuntu 22.04 container, runs `install.sh`, and asserts:
 - `test/` is correctly excluded from stowing
 - The tracked `.zshrc` is syntactically valid zsh
 - Re-running preserves existing `.local` files
+- Real `~/.zshrc` / `~/.zprofile` files are backed up and replaced by symlinks, and a re-run moves nothing
 - `$CLAUDE_REPO` triggers a clone into `~/.claude`
 - `install.sh` leaves an existing `~/.claude` alone
 - A failing clone produces a `WARNING` and exits 0 (doesn't abort the rest of the bootstrap)
+- An existing non-git `~/.claude` gets the repo attached in place (repo versions win, untracked files kept), and a failed attach leaves it as it was
 
 Re-run after any change to `install.sh` or the stow packages.

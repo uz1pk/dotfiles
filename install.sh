@@ -3,6 +3,7 @@
 set -euo pipefail
 
 DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+STAMP="$(date +%Y%m%d-%H%M%S)"
 
 if ! command -v stow &>/dev/null; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -15,6 +16,29 @@ if ! command -v stow &>/dev/null; then
     fi
 fi
 
+backup_conflicts() {
+    local pkg="$1" rel
+    while IFS= read -r rel; do
+        rel="${rel#"$pkg"/}"
+        if [[ -e "$HOME/$rel" && ! -L "$HOME/$rel" ]]; then
+            mv "$HOME/$rel" "$HOME/$rel.backup-$STAMP"
+            echo "  Moved existing ~/$rel to ~/$rel.backup-$STAMP"
+        fi
+    done < <(find "$pkg" -type f)
+}
+
+attach_claude_repo() {
+    local dir="$HOME/.claude" branch
+    if ! { git -C "$dir" init -q && git -C "$dir" remote add origin "$1" && git -C "$dir" fetch -q origin; }; then
+        rm -rf "$dir/.git"
+        return 1
+    fi
+    if git -C "$dir" remote set-head origin --auto >/dev/null 2>&1; then
+        branch="$(git -C "$dir" symbolic-ref --short refs/remotes/origin/HEAD)"
+        git -C "$dir" checkout -q -f -t "$branch"
+    fi
+}
+
 cd "$DOTFILES_DIR"
 
 for pkg in */; do
@@ -23,7 +47,8 @@ for pkg in */; do
         .git|test) continue ;;
     esac
     echo "Stowing $pkg..."
-    stow -R "$pkg"
+    backup_conflicts "$pkg"
+    stow -R --target="$HOME" "$pkg"
 done
 
 for local_file in .zshrc.local .zshenv.local .zprofile.local; do
@@ -43,11 +68,12 @@ if [[ ! -d "$HOME/.claude/.git" ]]; then
     fi
     if [[ -n "$claude_repo" ]]; then
         if [[ -d "$HOME/.claude" && -n "$(ls -A "$HOME/.claude" 2>/dev/null)" ]]; then
-            backup="$HOME/.claude.backup-$(date +%Y%m%d-%H%M%S)"
-            mv "$HOME/.claude" "$backup"
-            echo "  Moved existing untracked ~/.claude to $backup"
-        fi
-        if git clone "$claude_repo" "$HOME/.claude"; then
+            if attach_claude_repo "$claude_repo"; then
+                echo "  Attached Claude config to existing ~/.claude"
+            else
+                echo "  WARNING: could not attach Claude config to ~/.claude."
+            fi
+        elif git clone "$claude_repo" "$HOME/.claude"; then
             echo "  Cloned Claude config to ~/.claude"
         else
             echo "  WARNING: clone failed. ~/.claude was not set up."

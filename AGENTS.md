@@ -34,7 +34,7 @@ Never do any of the following without explicit user instruction.
 
 - **`.local` override pattern**: each tracked `zsh/.X` ends with `[ -f "$HOME/.X.local" ] && source "$HOME/.X.local"`. Machine-specific config goes in the `.local` counterpart, which lives in `$HOME` outside this repo's tree.
 
-- **`install.sh` is idempotent.** `.local` files are never overwritten; `~/.claude` isn't re-cloned if already a git repo; an existing untracked `~/.claude/` is backed up to `~/.claude.backup-YYYYMMDD-HHMMSS` before a fresh clone. Don't weaken these guards.
+- **`install.sh` is idempotent.** `.local` files are never overwritten; a real file where a stow link goes is moved to `<file>.backup-YYYYMMDD-HHMMSS` first, never deleted; `~/.claude` isn't re-cloned if already a git repo; an existing untracked `~/.claude/` gets the repo attached in place (tracked files take the repo's version, untracked files stay), and a failed attach removes only the `.git` it created. Don't weaken these guards.
 
 - **Tests** live in `test/` and run via `./test/run.sh`. Run them after changes to `install.sh` or `zsh/` before recommending commit. They don't need network access to internal hosts.
 
