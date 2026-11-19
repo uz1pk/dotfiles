@@ -47,9 +47,56 @@ alias gw="./gradlew"
 branch() { git checkout -b "uz/$1"; }
 alias python='python3'
 alias broom="git add . && git commit -m ':broom:' && git push"
+
 alias glist="git branch -l"
 gdl() { git branch -D "$1"; }
 alias broom="git add . && git commit -m ':broom:' && git push"
+alias c="claude --dangerously-skip-permissions"
+
+_pr_people_edit() {
+  local method=$1; shift
+  local -a reviewers assignees
+  local arg link host repo num rc=0
+  for arg in "$@"; do
+    if [[ $arg == http*://* ]]; then
+      [[ -n $link ]] && { echo "Only one PR link allowed" >&2; return 1; }
+      link=$arg
+    else
+      reviewers+=(-f "reviewers[]=$arg")
+      assignees+=(-f "assignees[]=$arg")
+    fi
+  done
+  (( $#reviewers )) || { echo "Usage: rvadd|rvrm [pr-link] <github-user>..." >&2; return 1; }
+  [[ -n $link ]] || link=$(gh pr view --json url --jq .url) || return 1
+  if [[ ! $link =~ '^https?://([^/]+)/([^/]+/[^/]+)/pull/([0-9]+)' ]]; then
+    echo "Not a PR link: $link" >&2
+    return 1
+  fi
+  host=$match[1] repo=$match[2] num=$match[3]
+  gh api --silent --hostname $host -X $method repos/$repo/pulls/$num/requested_reviewers "${reviewers[@]}" || rc=1
+  gh api --silent --hostname $host -X $method repos/$repo/issues/$num/assignees "${assignees[@]}" || rc=1
+  (( rc )) || print -r -- $link
+  return $rc
+}
+
+rvadd() { _pr_people_edit POST "$@"; }
+rvrm()  { _pr_people_edit DELETE "$@"; }
+
+cmds() {
+  local rc=$HOME/.zshrc n w=0
+  local -a als fns
+  als=(${(ou)${(f)"$(sed -nE 's/^alias ([^=]+)=.*/\1/p' $rc)"}})
+  fns=(${(f)"$(sed -nE 's/^([A-Za-z][A-Za-z0-9_-]*)\(\).*/\1/p' $rc)"})
+  for n in $als; do
+    (( ${#n} > w )) && w=${#n}
+  done
+  print "Aliases"
+  for n in $als; do
+    printf "  %-${w}s  %s\n" "$n" "${aliases[$n]}"
+  done
+  print "Functions"
+  print "  ${(j:  :)fns}"
+}
 
 # ----------------------------
 # Java exports (if I need to change versions)
@@ -61,7 +108,6 @@ alias broom="git add . && git commit -m ':broom:' && git push"
 #export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
 export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-21.jdk/Contents/Home
 #export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-25.jdk/Contents/Home
-
 
 # ----------------------------
 # Rust
@@ -94,7 +140,6 @@ export DISABLE_TELEMETRY=1
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 export NODE_OPTIONS="--max-old-space-size=8192"
 export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
-alias claude='claude --effort max'
 
 # ----------------------------
 # Machine-specific overrides (not tracked)
