@@ -43,14 +43,8 @@ export NVM_DIR="$HOME/.nvm"
 # Aliases
 # ----------------------------
 
-alias gw="./gradlew"
-branch() { git checkout -b "uz/$1"; }
 alias python='python3'
-alias broom="git add . && git commit -m ':broom:' && git push"
 
-alias glist="git branch -l"
-gdl() { git branch -D "$1"; }
-alias broom="git add . && git commit -m ':broom:' && git push"
 alias c="claude --dangerously-skip-permissions"
 
 _pr_people_edit() {
