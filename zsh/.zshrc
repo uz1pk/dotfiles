@@ -92,6 +92,52 @@ cmds() {
   print "  ${(j:  :)fns}"
 }
 
+alias gw="./gradlew"
+
+typeset -g BRANCH_PREFIX=uz/
+branch() {
+  if (( $# != 1 )); then
+    print -u2 'Usage: branch <name>'
+    return 1
+  fi
+  git checkout -b "${BRANCH_PREFIX-$USER/}$1"
+}
+
+alias broom="git add . && git commit -m ':broom:' && git push"
+alias b=broom
+alias glist="git branch -l"
+gdl() { git branch -D "$1"; }
+alias gs="git switch"
+
+prbody() {
+  (( $# <= 1 )) || { echo "Usage: prbody [pr-link]" >&2; return 1; }
+  local -a target=("$@")
+  local dir body
+  dir=$(mktemp -d -t prbody) || return 1
+  {
+    body=$(gh pr view "${target[@]}" --json body --jq .body) || return 1
+    print -r -- "${body//$'\r'/}" > "$dir/pr-body.md"
+    cp "$dir/pr-body.md" "$dir/original.md"
+    ${=EDITOR:-code --wait} "$dir/pr-body.md" || { echo "Editor exited with an error; nothing uploaded" >&2; return 1; }
+    if cmp -s "$dir/pr-body.md" "$dir/original.md"; then
+      echo "No changes; nothing uploaded"
+      return 0
+    fi
+    gh pr edit "${target[@]}" --body-file "$dir/pr-body.md"
+  } always {
+    rm -rf "$dir"
+  }
+}
+
+gtrace() {
+  if [[ $# -lt 1 ]]; then
+    echo "Usage: gtrace <group:artifact> [configuration]" >&2
+    echo "  default configuration: runtimeClasspath" >&2
+    return 1
+  fi
+  ./gradlew dependencyInsight --dependency "$1" --configuration "${2:-runtimeClasspath}"
+}
+
 # ----------------------------
 # Java exports (if I need to change versions)
 # ----------------------------
@@ -140,15 +186,6 @@ export CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1
 # ----------------------------
 
 [ -f "$HOME/.zshrc.local" ] && source "$HOME/.zshrc.local"
-
-trace() {
-  if [[ $# -lt 1 ]]; then
-    echo "Usage: trace <group:artifact> [configuration]" >&2
-    echo "  default configuration: runtimeClasspath" >&2
-    return 1
-  fi
-  ./gradlew dependencyInsight --dependency "$1" --configuration "${2:-runtimeClasspath}"
-}
 
 export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
 export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
