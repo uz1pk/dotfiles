@@ -47,7 +47,7 @@ alias python='python3'
 
 alias c="claude --dangerously-skip-permissions"
 
-_pr_people_edit() {
+_reviewers_edit() {
   local method=$1; shift
   local -a reviewers assignees
   local arg link host repo num rc=0
@@ -72,9 +72,8 @@ _pr_people_edit() {
   (( rc )) || print -r -- $link
   return $rc
 }
-
-rvadd() { _pr_people_edit POST "$@"; }
-rvrm()  { _pr_people_edit DELETE "$@"; }
+rvadd() { _reviewers_edit POST "$@"; }
+rvrm()  { _reviewers_edit DELETE "$@"; }
 
 cmds() {
   local rc=$HOME/.zshrc n w=0
