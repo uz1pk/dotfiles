@@ -75,22 +75,6 @@ _reviewers_edit() {
 rvadd() { _reviewers_edit POST "$@"; }
 rvrm()  { _reviewers_edit DELETE "$@"; }
 
-cmds() {
-  local rc=$HOME/.zshrc n w=0
-  local -a als fns
-  als=(${(ou)${(f)"$(sed -nE 's/^alias ([^=]+)=.*/\1/p' $rc)"}})
-  fns=(${(f)"$(sed -nE 's/^([A-Za-z][A-Za-z0-9_-]*)\(\).*/\1/p' $rc)"})
-  for n in $als; do
-    (( ${#n} > w )) && w=${#n}
-  done
-  print "Aliases"
-  for n in $als; do
-    printf "  %-${w}s  %s\n" "$n" "${aliases[$n]}"
-  done
-  print "Functions"
-  print "  ${(j:  :)fns}"
-}
-
 alias gw="./gradlew"
 
 typeset -g BRANCH_PREFIX=uz/
